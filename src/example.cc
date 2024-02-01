@@ -6,19 +6,21 @@
 
 using namespace clang;
 
-class FindNamedClassVisitor
-    : public RecursiveASTVisitor<FindNamedClassVisitor> {
+class FindFunctionCallVisitor
+    : public RecursiveASTVisitor<FindFunctionCallVisitor> {
 public:
-  explicit FindNamedClassVisitor(ASTContext *Context) : Context(Context) {}
+  explicit FindFunctionCallVisitor(ASTContext *Context) : Context(Context) {}
 
-  bool VisitCXXRecordDecl(CXXRecordDecl *Declaration) {
-    if (Declaration->getQualifiedNameAsString() == "n::m::C") {
-      FullSourceLoc FullLocation =
-          Context->getFullLoc(Declaration->getBeginLoc());
-      if (FullLocation.isValid())
-        llvm::outs() << "Found declaration at "
-                     << FullLocation.getSpellingLineNumber() << ":"
-                     << FullLocation.getSpellingColumnNumber() << "\n";
+  virtual bool VisitCallExpr(CallExpr *CE) {
+    if (FunctionDecl *FD = CE->getDirectCallee()) {
+      llvm::outs() << "Function call: " << FD->getNameAsString()
+          << " args number " << CE->getNumArgs()
+          <<"\n";
+      auto **Args = CE->getArgs();
+
+      for (size_t i = 0; i < CE->getNumArgs(); ++i) {
+          llvm::outs() << "Arg[" << i << "] " << Args[i]->getType() << "\n";
+      }
     }
     return true;
   }
@@ -36,7 +38,7 @@ public:
   }
 
 private:
-  FindNamedClassVisitor Visitor;
+  FindFunctionCallVisitor Visitor;
 };
 
 class FindNamedClassAction : public clang::ASTFrontendAction {
@@ -49,9 +51,7 @@ public:
 
 int main(int argc, char **argv) {
   if (argc > 1) {
-    for (size_t i = 1; i < argc; ++i) {
-      clang::tooling::runToolOnCode(std::make_unique<FindNamedClassAction>(),
-                                    argv[i]);
-    }
+    clang::tooling::runToolOnCode(std::make_unique<FindNamedClassAction>(),
+                                  argv[1]);
   }
 }
