@@ -14,7 +14,6 @@ include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${CLANG_INCLUDE_DIRS})
 
 separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
-
 add_definitions(${LLVM_DEFINITIONS_LIST})
 
 set(LLVM_LINK_COMPONENTS Support)
@@ -22,7 +21,5 @@ set(LLVM_LINK_COMPONENTS Support)
 file(GLOB SOURCES "src/*.cc")
 add_executable(fff-gen ${SOURCES})
 
-target_link_libraries(fff-gen PRIVATE clangAST clangBasic clangFrontend
-                                      clangSerialization clangTooling)
-
-target_link_libraries(fff-gen PRIVATE ${LLVM_AVAILABLE_LIBS})
+target_link_libraries(fff-gen PRIVATE ${LLVM_LIBS})
+target_link_libraries(fff-gen PRIVATE clangTooling)
