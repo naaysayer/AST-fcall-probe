@@ -2,8 +2,11 @@
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/Frontend/CompilerInstance.h"
 #include "clang/Frontend/FrontendAction.h"
+#include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
 
+using namespace clang::tooling;
+using namespace llvm;
 using namespace clang;
 
 class FindFunctionCallVisitor
@@ -14,12 +17,11 @@ public:
   virtual bool VisitCallExpr(CallExpr *CE) {
     if (FunctionDecl *FD = CE->getDirectCallee()) {
       llvm::outs() << "Function call: " << FD->getNameAsString()
-          << " args number " << CE->getNumArgs()
-          <<"\n";
+                   << " args number " << CE->getNumArgs() << "\n";
       auto **Args = CE->getArgs();
 
       for (size_t i = 0; i < CE->getNumArgs(); ++i) {
-          llvm::outs() << "Arg[" << i << "] " << Args[i]->getType() << "\n";
+        llvm::outs() << "Arg[" << i << "] " << Args[i]->getType() << "\n";
       }
     }
     return true;
@@ -29,11 +31,11 @@ private:
   ASTContext *Context;
 };
 
-class FindNamedClassConsumer : public clang::ASTConsumer {
+class FindNamedClassConsumer : public ASTConsumer {
 public:
   explicit FindNamedClassConsumer(ASTContext *Context) : Visitor(Context) {}
 
-  virtual void HandleTranslationUnit(clang::ASTContext &Context) {
+  virtual void HandleTranslationUnit(ASTContext &Context) {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
 
@@ -41,17 +43,25 @@ private:
   FindFunctionCallVisitor Visitor;
 };
 
-class FindNamedClassAction : public clang::ASTFrontendAction {
+class FindNamedClassAction : public ASTFrontendAction {
 public:
   virtual std::unique_ptr<clang::ASTConsumer>
-  CreateASTConsumer(clang::CompilerInstance &Compiler, llvm::StringRef InFile) {
+  CreateASTConsumer(CompilerInstance &Compiler, StringRef InFile) {
     return std::make_unique<FindNamedClassConsumer>(&Compiler.getASTContext());
   }
 };
 
-int main(int argc, char **argv) {
-  if (argc > 1) {
-    clang::tooling::runToolOnCode(std::make_unique<FindNamedClassAction>(),
-                                  argv[1]);
-  }
+static cl::OptionCategory MyToolCategory("My tool options");
+static cl::extrahelp CommonHelp(CommonOptionsParser::HelpMessage);
+
+int main(int argc,const char **argv) {
+   auto parser = CommonOptionsParser::create(argc, argv, MyToolCategory);
+   if (!parser) {
+       return -1;
+   }
+
+   ClangTool Tool(parser->getCompilations(),
+                  parser->getSourcePathList());
+
+   return Tool.run(newFrontendActionFactory<FindNamedClassAction>().get());
 }
