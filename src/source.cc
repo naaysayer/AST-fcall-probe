@@ -102,17 +102,27 @@ int main(int argc,const char **argv) {
 
    int ret =  Tool.run(newFrontendActionFactory<FindNamedClassAction>().get());
 
+   json::OStream JsonOS(llvm::outs(), 4);
+   JsonOS.array([&] {
+     for (const auto &info : functionCalls) {
+       JsonOS.object([&] {
+         JsonOS.attribute("function_name", info.name);
+         JsonOS.attribute("return_value_type", info.rvalueType);
+         JsonOS.attribute("argc", info.argTypes.size());
+         JsonOS.attributeObject("location", [&] {
+           JsonOS.attribute("file", info.location.file);
+           JsonOS.attribute("line", info.location.line);
+           JsonOS.attribute("column", info.location.column);
+         });
+         JsonOS.attributeArray("arg_types", [&] {
+           for (const auto &argType : info.argTypes) {
+             JsonOS.value(argType);
+           }
+         });
+       });
+     }
+   });
+   llvm::outs() << "\n";
 
-   for (auto info: functionCalls) {
-       llvm::outs() << "FC: " << info.rvalueType << " " <<  info.name << "(";
-       for (auto arg: info.argTypes) {
-           llvm::outs() << arg << ",";
-       }
-
-       llvm::outs()  << ") at " << info.location.file
-           << " " << info.location.line << ":" << info.location.column;
-
-
-       llvm::outs() << "\n";
-   }
+   return ret;
 }
