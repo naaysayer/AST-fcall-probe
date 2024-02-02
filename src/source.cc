@@ -4,13 +4,23 @@
 #include "clang/Frontend/FrontendAction.h"
 #include "clang/Tooling/CommonOptionsParser.h"
 #include "clang/Tooling/Tooling.h"
+#include "llvm/Support/JSON.h"
 
 using namespace clang::tooling;
 using namespace llvm;
 using namespace clang;
 
+using FuncCallInfo = struct {
+  std::string name;
+  std::vector<std::string> args;
+  struct {
+    unsigned line;
+    unsigned column;
+    std::string file;
+  } location;
+};
 
-static std::set<std::string> projectPaths;
+static std::vector<FuncCallInfo> functionCalls;
 
 class FindFunctionCallVisitor
     : public RecursiveASTVisitor<FindFunctionCallVisitor> {
@@ -26,28 +36,30 @@ public:
         return true;
       }
 
-      StringRef filename = SM->getFilename(FD->getSourceRange().getBegin());
+      FuncCallInfo info;
+
       FileID FID = SM->getFileID(loc);
 
-      // Get the line and column numbers
-      unsigned line = SM->getLineNumber(FID, SM->getSpellingLineNumber(loc));
-      unsigned column = SM->getColumnNumber(FID, SM->getSpellingColumnNumber(loc));
+      info.name = FD->getNameAsString();
+      info.args.reserve(CE->getNumArgs());
 
-      llvm::outs() << "Function call: " << FD->getNameAsString()
-                   << " args number " << CE->getNumArgs()
-                   << " at " <<  filename << " " << line << ":" << column
-                   << "\n";
+      info.location.file = SM->getFilename(FD->getSourceRange().getBegin());
+      info.location.line = SM->getLineNumber(FID, SM->getSpellingLineNumber(loc));
+      info.location.column = SM->getColumnNumber(FID, SM->getSpellingColumnNumber(loc));
+
+      QualType type;
       auto **Args = CE->getArgs();
-
-
       for (size_t i = 0; i < CE->getNumArgs(); ++i) {
-        llvm::outs() << "Arg[" << i << "] " << Args[i]->getType() << "\n";
+          info.args.push_back(Args[i]->getType().getAsString());
       }
+
+      functionCalls.push_back(info);
     }
     return true;
   }
 
 private:
+
   ASTContext *Context;
   SourceManager *SM;
 };
@@ -86,5 +98,20 @@ int main(int argc,const char **argv) {
    ClangTool Tool(parser->getCompilations(),
                   parser->getSourcePathList());
 
-   return Tool.run(newFrontendActionFactory<FindNamedClassAction>().get());
+   int ret =  Tool.run(newFrontendActionFactory<FindNamedClassAction>().get());
+
+
+   for (auto info: functionCalls) {
+       llvm::outs() << "FC: "
+           << info.name
+           << " at " << info.location.file
+           << " " << info.location.line << ":" << info.location.column
+           << " args: ";
+
+       for (auto arg: info.args) {
+           llvm::outs() << arg << " ";
+       }
+
+       llvm::outs() << "\n";
+   }
 }
