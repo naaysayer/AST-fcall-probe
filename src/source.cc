@@ -9,13 +9,23 @@ using namespace clang::tooling;
 using namespace llvm;
 using namespace clang;
 
+
+static std::set<std::string> projectPaths;
+
 class FindFunctionCallVisitor
     : public RecursiveASTVisitor<FindFunctionCallVisitor> {
 public:
-  explicit FindFunctionCallVisitor(ASTContext *Context) : Context(Context) {}
+  explicit FindFunctionCallVisitor(SourceManager *SM, ASTContext *Context)
+      : SM(SM), Context(Context) {}
 
   virtual bool VisitCallExpr(CallExpr *CE) {
     if (FunctionDecl *FD = CE->getDirectCallee()) {
+
+      SourceLocation loc = FD->getLocation();
+      if (SM->isInSystemHeader(loc)) {
+        return true;
+      }
+
       llvm::outs() << "Function call: " << FD->getNameAsString()
                    << " args number " << CE->getNumArgs() << "\n";
       auto **Args = CE->getArgs();
@@ -29,17 +39,20 @@ public:
 
 private:
   ASTContext *Context;
+  SourceManager *SM;
 };
 
 class FindNamedClassConsumer : public ASTConsumer {
 public:
-  explicit FindNamedClassConsumer(ASTContext *Context) : Visitor(Context) {}
+  explicit FindNamedClassConsumer(SourceManager *SM, ASTContext *Context)
+      : SM(SM), Visitor(SM, Context) {}
 
   virtual void HandleTranslationUnit(ASTContext &Context) {
     Visitor.TraverseDecl(Context.getTranslationUnitDecl());
   }
 
 private:
+  SourceManager *SM;
   FindFunctionCallVisitor Visitor;
 };
 
@@ -47,7 +60,7 @@ class FindNamedClassAction : public ASTFrontendAction {
 public:
   virtual std::unique_ptr<clang::ASTConsumer>
   CreateASTConsumer(CompilerInstance &Compiler, StringRef InFile) {
-    return std::make_unique<FindNamedClassConsumer>(&Compiler.getASTContext());
+    return std::make_unique<FindNamedClassConsumer>(&Compiler.getSourceManager(), &Compiler.getASTContext());
   }
 };
 
