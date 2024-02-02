@@ -1,0 +1,18 @@
+---
+Checks: >
+  clang-diagnostic-*,
+  clang-analyzer-*,
+  clang-analyzer-cplusplus*
+  cppcoreguidelines-*,
+  modernize-*,
+  bugprone-*,
+  readability-*,
+  performance-*,
+  misc-definitions-in-headers,
+  misc-unused-alias-decls,
+  misc-unused-parameters,
+  -boost-*
+WarningsAsErrors: true
+HeaderFilterRegex: ''
+AnalyzeTemporaryDtors: false
+FormatStyle:     file
