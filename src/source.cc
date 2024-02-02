@@ -12,7 +12,8 @@ using namespace clang;
 
 using FuncCallInfo = struct {
   std::string name;
-  std::vector<std::string> args;
+  std::string rvalueType;
+  std::vector<std::string> argTypes;
   struct {
     unsigned line;
     unsigned column;
@@ -26,7 +27,7 @@ class FindFunctionCallVisitor
     : public RecursiveASTVisitor<FindFunctionCallVisitor> {
 public:
   explicit FindFunctionCallVisitor(SourceManager *SM, ASTContext *Context)
-      : SM(SM), Context(Context) {}
+      : SM(SM), ctx(Context) {}
 
   virtual bool VisitCallExpr(CallExpr *CE) {
     if (FunctionDecl *FD = CE->getDirectCallee()) {
@@ -41,7 +42,8 @@ public:
       FileID FID = SM->getFileID(loc);
 
       info.name = FD->getNameAsString();
-      info.args.reserve(CE->getNumArgs());
+      info.rvalueType = FD->getReturnType().getAsString();
+      info.argTypes.reserve(CE->getNumArgs());
 
       info.location.file = SM->getFilename(FD->getSourceRange().getBegin());
       info.location.line = SM->getLineNumber(FID, SM->getSpellingLineNumber(loc));
@@ -50,7 +52,7 @@ public:
       QualType type;
       auto **Args = CE->getArgs();
       for (size_t i = 0; i < CE->getNumArgs(); ++i) {
-          info.args.push_back(Args[i]->getType().getAsString());
+          info.argTypes.push_back(Args[i]->getType().getAsString());
       }
 
       functionCalls.push_back(info);
@@ -60,7 +62,7 @@ public:
 
 private:
 
-  ASTContext *Context;
+  ASTContext *ctx;
   SourceManager *SM;
 };
 
@@ -102,15 +104,14 @@ int main(int argc,const char **argv) {
 
 
    for (auto info: functionCalls) {
-       llvm::outs() << "FC: "
-           << info.name
-           << " at " << info.location.file
-           << " " << info.location.line << ":" << info.location.column
-           << " args: ";
-
-       for (auto arg: info.args) {
-           llvm::outs() << arg << " ";
+       llvm::outs() << "FC: " << info.rvalueType << " " <<  info.name << "(";
+       for (auto arg: info.argTypes) {
+           llvm::outs() << arg << ",";
        }
+
+       llvm::outs()  << ") at " << info.location.file
+           << " " << info.location.line << ":" << info.location.column;
+
 
        llvm::outs() << "\n";
    }
