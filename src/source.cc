@@ -26,9 +26,19 @@ public:
         return true;
       }
 
+      StringRef filename = SM->getFilename(FD->getSourceRange().getBegin());
+      FileID FID = SM->getFileID(loc);
+
+      // Get the line and column numbers
+      unsigned line = SM->getLineNumber(FID, SM->getSpellingLineNumber(loc));
+      unsigned column = SM->getColumnNumber(FID, SM->getSpellingColumnNumber(loc));
+
       llvm::outs() << "Function call: " << FD->getNameAsString()
-                   << " args number " << CE->getNumArgs() << "\n";
+                   << " args number " << CE->getNumArgs()
+                   << " at " <<  filename << " " << line << ":" << column
+                   << "\n";
       auto **Args = CE->getArgs();
+
 
       for (size_t i = 0; i < CE->getNumArgs(); ++i) {
         llvm::outs() << "Arg[" << i << "] " << Args[i]->getType() << "\n";
