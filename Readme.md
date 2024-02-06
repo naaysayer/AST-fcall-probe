@@ -11,11 +11,16 @@ The result is output in json format, so you could use 'jq'.
 Prerequisites
 -------------
 
-*   LLVM
+On fedora linux server i have installed all packages:
+        clang clang-analyzer clang-libs clang-devel
+        llvm llvm-devel llvm-libs llvm-static
+
+also dependancies for llvm:
+        libffi libffi-devel zlib-dev
+
 
 Usage
 -----
-
 fcalls [options] <source0> [... <sourceN>]
 
 
@@ -39,7 +44,7 @@ You can use jq 'select' to filter what you need
 Notes
 ------
 
-Code tested only on llvm 17.0.6 and MacOS :)
+Code tested on fedora linux server with llvm 17.0.6
 
 License
 -------
