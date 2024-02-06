@@ -4,6 +4,8 @@ set(CMAKE_CXX_STANDARD 20)
 
 project(fcalls VERSION 1.0.0)
 
+include(CPack)
+
 find_package(LLVM REQUIRED CONFIG)
 find_package(Clang REQUIRED CONFIG)
 
@@ -23,3 +25,5 @@ add_executable(fcalls ${SOURCES})
 
 target_link_libraries(fcalls PRIVATE ${LLVM_LIBS})
 target_link_libraries(fcalls PRIVATE clangTooling)
+
+install(TARGETS fcalls DESTINATION bin)
