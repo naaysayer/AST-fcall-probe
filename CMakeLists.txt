@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.20)
 
 set(CMAKE_CXX_STANDARD 20)
 
@@ -14,16 +14,13 @@ message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
 
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${CLANG_INCLUDE_DIRS})
-
-separate_arguments(LLVM_DEFINITIONS_LIST NATIVE_COMMAND ${LLVM_DEFINITIONS})
-add_definitions(${LLVM_DEFINITIONS_LIST})
-
-set(LLVM_LINK_COMPONENTS Support)
+add_definitions(${LLVM_DEFINITIONS})
+add_definitions(${CLANG_DEFINITIONS})
 
 file(GLOB SOURCES "src/*.cc")
 add_executable(fcalls ${SOURCES})
 
-target_link_libraries(fcalls PRIVATE ${LLVM_LIBS})
-target_link_libraries(fcalls PRIVATE clangTooling)
+target_link_libraries(fcalls PRIVATE ${LLVM_AVAILABLE_LIBS})
+target_link_libraries(fcalls PRIVATE clang clang-cpp)
 
 install(TARGETS fcalls DESTINATION bin)
