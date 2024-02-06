@@ -41,6 +41,8 @@ Notes
 
 Code tested only on llvm 17.0.6 and MacOS :)
 
+For Linux checkout 'linux' branch
+
 License
 -------
 
