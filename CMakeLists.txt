@@ -20,7 +20,7 @@ add_definitions(${CLANG_DEFINITIONS})
 file(GLOB SOURCES "src/*.cc")
 add_executable(fcalls ${SOURCES})
 
-target_link_libraries(fcalls PRIVATE ${LLVM_AVAILABLE_LIBS})
-target_link_libraries(fcalls PRIVATE clang clang-cpp)
+target_link_libraries(fcalls PRIVATE LLVM)
+target_link_libraries(fcalls PRIVATE clang-cpp)
 
 install(TARGETS fcalls DESTINATION bin)
